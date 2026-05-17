@@ -93,6 +93,11 @@ const char *_cudaGetErrorEnum(ncclResult_t error);
 const char *_cudaGetErrorEnum(NppStatus error);
 #endif
 
+template <typename T>
+inline const char *_cudaGetErrorEnum(T error) {
+  return "<External Library Enum (check integer code)>";
+}
+
 #ifdef __DRIVER_TYPES_H__
 #ifndef DEVICE_RESET
 #define DEVICE_RESET cudaDeviceReset();

@@ -23,7 +23,7 @@ struct StackVector {
     struct Iter {
         const StackVector<T,N>* self;
         int index;
-        inline T operator*() { return self->at(index); }
+        inline T operator*() { return (*self)[index]; }
         inline Iter& operator++() { index++; return *this; }
         inline Iter operator+(int i) { return {self, i+index}; }
         inline bool operator!=(Iter& other) { return index != other.index; }

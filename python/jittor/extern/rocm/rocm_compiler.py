@@ -29,8 +29,10 @@ def check_gcc_use_cxx11_abi():
     elif "--with-default-libstdcxx-abi=gcc4-compatible" in gcc_info:
         return False
     else:
-        LOG.d("unknown cxx abi, defaults to gcc4-compatible")
-        return False
+        # 1. Fixed the typo (changed LOG.d to LOG.w)
+        LOG.w("unknown cxx abi, assuming CXX11 ABI is True for CachyOS") 
+        # 2. Arch/CachyOS uses the new ABI by default
+        return True
 
 
 def install_rocm_jittor_core():
@@ -92,7 +94,10 @@ def install_rocm_library(lib_name, cuda_name, link=True):
     import jittor.compile_extern as compile_extern
 
     LOG.vv(f"setup {lib_name}...")
-    rocmlib_include_path = os.path.join(rocm_home, lib_name.lower(), "include")
+    
+    # 兼容 ROCm 5.x 和 ROCm 6/7 的新版扁平化目录结构
+    rocmlib_include_path_old = os.path.join(rocm_home, lib_name.lower(), "include")
+    rocmlib_include_path_new = os.path.join(rocm_home, "include", lib_name.lower())
     
     jt_cuda_include = os.path.join(compiler.jittor_path, "extern", "cuda", "inc")
     jt_culib_include = os.path.join(compiler.jittor_path, "extern", "cuda", cuda_name, "inc")
@@ -103,16 +108,18 @@ def install_rocm_library(lib_name, cuda_name, link=True):
         for fname in f:
             culib_src_files.append(os.path.join(r, fname))
 
-    extra_flags = f" -I\"{jt_cuda_include}\" -I\"{jt_culib_include}\" -I\"{rocmlib_include_path}\" "
+    # 把新老路径都加进编译参数中
+    extra_flags = f" -I\"{jt_cuda_include}\" -I\"{jt_culib_include}\" -I\"{rocmlib_include_path_old}\" -I\"{rocmlib_include_path_new}\" "
     extra_flags += f" -L\"{os.path.join(cache_path, 'cuda')}\" -llibcuda_extern "
+    
     if lib_name == "rccl":
         extra_flags += compile_extern.mpi_compile_flags
 
     if link:
-        rocmlib_lib_path = os.path.join(rocm_home, lib_name.lower(), "lib")
-        if os.path.exists(os.path.join(rocmlib_lib_path, f"lib{lib_name}.so")):
-            jittor_utils.LOG.i(f"Found {os.path.join(rocmlib_lib_path, 'lib' + lib_name + '.so')}")
-        extra_flags += f" -L{rocmlib_lib_path} -l{lib_name} "
+        # 兼容新老库文件路径
+        rocmlib_lib_path_old = os.path.join(rocm_home, lib_name.lower(), "lib")
+        rocmlib_lib_path_new = os.path.join(rocm_home, "lib")
+        extra_flags += f" -L\"{rocmlib_lib_path_old}\" -L\"{rocmlib_lib_path_new}\" -l{lib_name} "
 
     rocmlib = compiler.compile_custom_ops(culib_src_files, return_module=True, extra_flags=extra_flags)
     setattr(compile_extern, cuda_name, rocmlib)

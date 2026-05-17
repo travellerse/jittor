@@ -7,6 +7,9 @@
 #pragma once
 #include "common.h"
 
+#include <string.h>
+#include <cstring>
+
 #include <hip/hip_runtime.h>
 #include <rocprim/rocprim.hpp>
 #include <rocprim/device/device_segmented_reduce.hpp>
