@@ -303,12 +303,13 @@ class SGD(Optimizer):
         optimizer = nn.SGD(model.parameters(), lr, momentum=0.9)
         optimizer.step(loss)
     """
-    def __init__(self, params, lr, momentum=0, weight_decay=0, dampening=0, nesterov=False):
+    def __init__(self, params, lr, momentum=0, weight_decay=0, dampening=0, nesterov=False, max_grad_norm=0.0):
         super().__init__(params, lr)
         self.momentum = momentum
         self.weight_decay = weight_decay
         self.dampening = dampening
         self.nesterov = nesterov
+        self.max_grad_norm = max_grad_norm
 
         # initialize required arguments
         for pg in self.param_groups:
@@ -324,6 +325,10 @@ class SGD(Optimizer):
 
     def step(self, loss=None, retain_graph=False):
         self.pre_step(loss, retain_graph=retain_graph)
+        # Clip gradients if max_grad_norm is set
+        max_grad_norm = self.param_groups[0].get("max_grad_norm", self.max_grad_norm)
+        if max_grad_norm > 0:
+            self.clip_grad_norm(max_grad_norm)
         jt.flags.node_order = 1
         for pg in self.param_groups:
             # get arguments from each param_groups
@@ -351,15 +356,17 @@ class RMSprop(Optimizer):
         lr(float): learning rate.
         eps(float): term added to the denominator to avoid division by zero, default 1e-8.
         alpha(float): smoothing constant, default 0.99.
+        max_grad_norm(float): max norm for gradient clipping, default 0.0 (no clipping).
 
     Example:
         optimizer = nn.RMSprop(model.parameters(), lr)
         optimizer.step(loss)
     """
-    def __init__(self, params, lr=1e-2, eps=1e-8, alpha=0.99):
+    def __init__(self, params, lr=1e-2, eps=1e-8, alpha=0.99, max_grad_norm=0.0):
         super().__init__(params, lr)
         self.eps = eps
         self.alpha = alpha
+        self.max_grad_norm = max_grad_norm
         
         # initialize required arguments for each param_groups
         for pg in self.param_groups:
@@ -375,6 +382,10 @@ class RMSprop(Optimizer):
 
     def step(self, loss=None, retain_graph=False):
         self.pre_step(loss, retain_graph)
+        # Clip gradients if max_grad_norm is set
+        max_grad_norm = self.param_groups[0].get("max_grad_norm", self.max_grad_norm)
+        if max_grad_norm > 0:
+            self.clip_grad_norm(max_grad_norm)
         for pg in self.param_groups:
             # get arguments from each param_groups
             lr = pg.get("lr", self.lr)
@@ -394,11 +405,12 @@ class Adam(Optimizer):
         optimizer = nn.Adam(model.parameters(), lr, eps=1e-8, betas=(0.9, 0.999))
         optimizer.step(loss)
     """
-    def __init__(self, params, lr, eps=1e-8, betas=(0.9, 0.999), weight_decay=0):
+    def __init__(self, params, lr, eps=1e-8, betas=(0.9, 0.999), weight_decay=0, max_grad_norm=0.0):
         super().__init__(params, lr)
         self.eps = eps
         self.betas = betas
         self.weight_decay = weight_decay
+        self.max_grad_norm = max_grad_norm
         # assert weight_decay==0, "weight_decay is not supported yet"
         
         # initialize required arguments for each param_groups
@@ -419,6 +431,10 @@ class Adam(Optimizer):
 
     def step(self, loss=None, retain_graph=False):
         self.pre_step(loss, retain_graph)
+        # Clip gradients if max_grad_norm is set
+        max_grad_norm = self.param_groups[0].get("max_grad_norm", self.max_grad_norm)
+        if max_grad_norm > 0:
+            self.clip_grad_norm(max_grad_norm)
         n = float(self.n_step)
         jt.flags.node_order = 1
         for pg in self.param_groups:
@@ -445,11 +461,12 @@ class AdamW(Optimizer):
         optimizer = nn.AdamW(model.parameters(), lr, eps=1e-8, betas=(0.9, 0.999))
         optimizer.step(loss)
     """
-    def __init__(self, params, lr, eps=1e-8, betas=(0.9, 0.999), weight_decay=0):
+    def __init__(self, params, lr, eps=1e-8, betas=(0.9, 0.999), weight_decay=0, max_grad_norm=0.0):
         super().__init__(params, lr)
         self.eps = eps
         self.betas = betas
         self.weight_decay = weight_decay
+        self.max_grad_norm = max_grad_norm
         # assert weight_decay==0, "weight_decay is not supported yet"
         
         # initialize required arguments for each param_groups
@@ -470,6 +487,10 @@ class AdamW(Optimizer):
 
     def step(self, loss=None, retain_graph=False):
         self.pre_step(loss, retain_graph)
+        # Clip gradients if max_grad_norm is set
+        max_grad_norm = self.param_groups[0].get("max_grad_norm", self.max_grad_norm)
+        if max_grad_norm > 0:
+            self.clip_grad_norm(max_grad_norm)
         n = float(self.n_step)
         for pg in self.param_groups:
             # get arguments from each param_groups
